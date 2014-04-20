@@ -13,7 +13,7 @@
  *****************************************************************/
 struct Edge {
 	int dest_node_id;
-	int used;
+	int flow;
 	struct Edge* next;
 };
 
@@ -64,7 +64,9 @@ void print_output();
  ***************************Algoritm.h****************************
  *****************************************************************/
 
-int relabel_to_front(t_graph graph);
+void initialize_preflow(t_graph graph, t_node source);
+void discharge(t_node vertex);
+int relabel_to_front();
 
 /*****************************************************************
  ***************************Global Vars***************************
@@ -72,21 +74,16 @@ int relabel_to_front(t_graph graph);
 
 t_graph graph = NULL;
 int V, E;
-
-/*
- * Estas variaveis serao actualizadas durante
- * a segunda DFS, e corresponderao ao
- * resultado a imprimir no final do programa
- */
 int links_to_close = 0;
 
 int main() {
 	read_graph();
 
 	// n_problems = read the problem line count
-	// read_problem(); <- set the critic points
 
-//  for each problem
+//  for each line (problem)
+	//  reset critic points
+	//  read_problem(); <- set the critic points
 	//	for each V in critics
 	//	   maxflow = relabel_to_front()
 	//	   if maxflow == 0
@@ -94,9 +91,50 @@ int main() {
 	//	       break;
 	//	   else if maxflow < links_to_cut
 	//		   links_to_cut = maxflow
+//  print links_to_cute
 
-	print_output();
+	return 0;
+}
 
+/*****************************************************************
+ ***************************Algorithm*****************************
+ *****************************************************************/
+void initialize_preflow(t_graph graph, t_node source) {
+	// for each vertex v
+	//    v.h = 0;
+	//    v.e = 0;
+	// for each edge e
+	//    e.flow = 0
+	// source.h = |V|
+	// for each v in Adj(source)
+	//    edge.flow = 1;
+	//    v.e = 1;
+	//    source.e--;
+}
+
+void discharge(t_node vertex) {
+//	while vertex.e > 0
+//	   v = vertex.current
+//	   if v == NULL
+//	       RELABEL(vertex)
+//	       vertex.current = first in vertex edges;
+//	   else if (vertex, v).flow == 1
+//		   PUSH(vertex ,v)
+//	   else vertex.current = vertex.current.next;
+}
+
+int relabel_to_front() {
+//	initialize_preflow(graph, source);
+//	L = vertexes except source
+//	for each vertex u in L
+//	    u.current = first vertex in u.edges
+//	u = L.head
+//	while u == NULL
+//	    old-height = u.h
+//	    DISCHARGE(u)
+//	    if u.h > old-height
+//	        move u to the front of list L
+//	    u = u.current.next
 	return 0;
 }
 
@@ -119,6 +157,8 @@ void read_graph() {
 }
 
 void print_output() {
+	// TODO:
+	// probably won't be implemented here... will be done in main()
 	// print lista de outputs
 }
 
@@ -144,7 +184,7 @@ t_edge create_edge(int dest_node_id) {
 	t_edge new_edge = malloc(sizeof(struct Edge));
 	new_edge->dest_node_id = dest_node_id;
 	new_edge->next = NULL;
-	new_edge->used = FALSE;
+	new_edge->flow = FALSE;
 	return new_edge;
 }
 
