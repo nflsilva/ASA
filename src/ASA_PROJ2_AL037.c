@@ -79,6 +79,7 @@ int links_to_close = 0;
 int main() {
 	read_graph();
 
+	initialize_preflow(graph, graph->vertexs[0]);
 	// n_problems = read the problem line count
 
 //  for each line (problem)
@@ -100,6 +101,27 @@ int main() {
  ***************************Algorithm*****************************
  *****************************************************************/
 void initialize_preflow(t_graph graph, t_node source) {
+	int i_vertex;
+	t_edge edge;
+	t_node adj_vertex;
+	for(i_vertex = 0; i_vertex < graph->max_vertex; ++ i_vertex){
+		graph->vertexs[i_vertex]->h = 0;
+		graph->vertexs[i_vertex]->e = 0;
+		edge = graph->vertexs[i_vertex]->edges;
+		while(edge!=NULL){
+			edge->flow = 0;
+			edge = edge->next;
+		}
+	}
+	source->h = V;
+	edge = graph->vertexs[source->node_id]->edges;
+	while(edge!=NULL){
+		edge->flow = 1;
+		graph->vertexs[edge->dest_node_id]->e = 1;
+		source->e--;
+		edge = edge->next;
+	}
+
 	// for each vertex v
 	//    v.h = 0;
 	//    v.e = 0;
