@@ -30,6 +30,7 @@ struct Node {
 	int e;
 	int node_id;
 	int critical_link;
+	t_edge current;
 	t_edge edges;
 };
 
@@ -73,6 +74,7 @@ int relabel_to_front();
  *****************************************************************/
 
 t_graph graph = NULL;
+t_node list_first = NULL;
 int V, E;
 int links_to_close = 0;
 
@@ -135,6 +137,22 @@ void initialize_preflow(t_graph graph, t_node source) {
 }
 
 void discharge(t_node vertex) {
+	t_edge v = vertex->current;
+	while(vertex->e > 0) {
+		if(v == NULL){
+			//TODO:
+			//RELABEL(vertex);
+			vertex->current = vertex->edges;
+		} else if(v->flow == 1){
+			//TODO:
+			//PUSH(vertex, v);
+		} else {
+			vertex->current = vertex->current->next;
+		}
+
+
+
+	}
 //	while vertex.e > 0
 //	   v = vertex.current
 //	   if v == NULL
@@ -145,8 +163,23 @@ void discharge(t_node vertex) {
 //	   else vertex.current = vertex.current.next;
 }
 
-int relabel_to_front() {
-//	initialize_preflow(graph, source);
+int relabel_to_front(t_graph graph, t_node source) {
+	initialize_preflow(graph, source);
+	int i_vertex, old_height;
+	t_node vertex = NULL;
+
+	for(i_vertex=0; i_vertex < graph->max_vertex; ++i_vertex){
+
+	}
+
+	while(vertex != NULL){
+		old_height = vertex->h;
+		discharge(vertex);
+		if(vertex->h > old_height){
+
+		}
+
+	}
 //	L = vertexes except source
 //	for each vertex u in L
 //	    u.current = first vertex in u.edges
@@ -195,6 +228,7 @@ t_node create_node(int node_id) {
 	new_node->h = 0;
 	new_node->e = 0;
 	new_node->critical_link = FALSE;
+	new_node->current = NULL;
 	return new_node;
 }
 
