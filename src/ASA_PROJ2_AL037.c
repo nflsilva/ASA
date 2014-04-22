@@ -160,7 +160,7 @@ void initialize_preflow(t_graph graph, t_node source) {
 	int i_vertex;
 	t_edge edge;
 	/*t_node adj_vertex;*/
-	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
+	for (i_vertex = 0; i_vertex < graph->max_vertex + 1; ++i_vertex) {
 		graph->vertexs[i_vertex]->h = 0;
 		graph->vertexs[i_vertex]->e = 0;
 		edge = graph->vertexs[i_vertex]->edges;
@@ -200,24 +200,27 @@ void discharge(t_node vertex) {
 		}
 	}
 
-	int i = 0;
-	printf("------------- DISCHARGE -------------\n");
-	for (i = 0; i < V+1; i++) {
-		printf("Vertex: %d\t e: %d\t h: %d\n", i, graph->vertexs[i]->e,
-				graph->vertexs[i]->h);
-	}
+	/*
+	 int i = 0;
+	 printf("------------- DISCHARGED vertex %d -------------\n",
+	 vertex->node_id);
+	 for (i = 0; i < V + 1; i++) {
+	 printf("Vertex: %d\t e: %d\t h: %d\n", i, graph->vertexs[i]->e,
+	 graph->vertexs[i]->h);
+	 }
+	 */
 }
 
 int relabel_to_front(t_graph graph, t_node source) {
-	initialize_preflow(graph, source);
-	list_head_index = 0;
-
 	int i_vertex, old_height;
 	t_node vertex = NULL;
 	t_edge source_tmp_edge = NULL;
 
 	source_tmp_edge = source->edges;
 	source->edges = source_tmp_edge->next;
+
+	initialize_preflow(graph, source);
+	list_head_index = 0;
 
 	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
 		if (i_vertex != source->node_id) {
@@ -261,6 +264,7 @@ void push(t_node origin, t_edge edge) {
 	if (edge->capacity != INFINITY) {
 		edge->capacity = 0;
 	}
+	edge->capacity = 0; /* FIXME: Verify */
 	edge->anti_parallel->capacity++;
 	origin->e--;
 	graph->vertexs[edge->dest_node_id]->e++;
@@ -317,7 +321,11 @@ void print_output() {
 void reset_crit_points(t_graph graph) {
 	int vertex_id;
 	for (vertex_id = 0; vertex_id < graph->max_vertex; ++vertex_id) {
-		graph->vertexs[vertex_id]->is_critical = FALSE;
+		if (graph->vertexs[vertex_id]->is_critical == TRUE) {
+			graph->vertexs[vertex_id]->is_critical = FALSE;
+			graph->vertexs[vertex_id]->edges =
+					graph->vertexs[vertex_id]->edges->next; /*FIXME*/
+		}
 	}
 }
 
