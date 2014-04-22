@@ -109,13 +109,12 @@ int main() {
 			vertex = graph->vertexs[vertex_id];
 			if (vertex->is_critical) {
 				max_flow = relabel_to_front(graph, vertex);
-				/*printf("MaxFlow: %d\n", max_flow);*/
-			}
-			if (max_flow == 0) {
-				links_to_cut = 0;
-				break;
-			} else if (max_flow < links_to_cut || links_to_cut < 0) {
-				links_to_cut = max_flow;
+				if (max_flow == 0) {
+					links_to_cut = 0;
+					break;
+				} else if (max_flow < links_to_cut || links_to_cut < 0) {
+					links_to_cut = max_flow;
+				}
 			}
 
 		}
