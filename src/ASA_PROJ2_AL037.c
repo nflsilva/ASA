@@ -74,7 +74,7 @@ int relabel_to_front();
  *****************************************************************/
 
 t_graph graph = NULL;
-t_node list_first = NULL;
+t_node* list = NULL;
 int V, E;
 int links_to_close = 0;
 
@@ -165,6 +165,7 @@ void discharge(t_node vertex) {
 
 int relabel_to_front(t_graph graph, t_node source) {
 	initialize_preflow(graph, source);
+
 	int i_vertex, old_height;
 	t_node vertex = NULL;
 
