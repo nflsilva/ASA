@@ -4,6 +4,9 @@
 #define TRUE 1
 #define FALSE 0
 
+#define NULL_ID -1;
+#define INFINITY 2
+
 #ifndef NULL
 #define NULL   ((void *) 0)
 #endif
@@ -14,6 +17,7 @@
 struct Edge {
 	int dest_node_id;
 	int flow;
+	int capacity;
 	struct Edge* next;
 };
 
@@ -30,6 +34,8 @@ struct Node {
 	int e;
 	int node_id;
 	int critical_link;
+	int prev_id;
+	int next_id;
 	t_edge current;
 	t_edge edges;
 };
@@ -53,6 +59,7 @@ typedef struct Graph* t_graph;
 t_graph create_graph(int num_vertexs);
 void destroy_graph(t_graph graph);
 void add_connection(t_graph graph, int orig_node_id, int dest_node_id);
+void switch_to_front(t_graph graph, t_node vertex);
 
 /*****************************************************************
  ***************************Setup.h*******************************
@@ -74,7 +81,7 @@ int relabel_to_front();
  *****************************************************************/
 
 t_graph graph = NULL;
-t_node* list = NULL;
+int list_head_index = 0;
 int V, E;
 int links_to_close = 0;
 
@@ -106,18 +113,18 @@ void initialize_preflow(t_graph graph, t_node source) {
 	int i_vertex;
 	t_edge edge;
 	t_node adj_vertex;
-	for(i_vertex = 0; i_vertex < graph->max_vertex; ++ i_vertex){
+	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
 		graph->vertexs[i_vertex]->h = 0;
 		graph->vertexs[i_vertex]->e = 0;
 		edge = graph->vertexs[i_vertex]->edges;
-		while(edge!=NULL){
+		while (edge != NULL) {
 			edge->flow = 0;
 			edge = edge->next;
 		}
 	}
 	source->h = V;
 	edge = graph->vertexs[source->node_id]->edges;
-	while(edge!=NULL){
+	while (edge != NULL) {
 		edge->flow = 1;
 		graph->vertexs[edge->dest_node_id]->e = 1;
 		source->e--;
@@ -138,19 +145,17 @@ void initialize_preflow(t_graph graph, t_node source) {
 
 void discharge(t_node vertex) {
 	t_edge v = vertex->current;
-	while(vertex->e > 0) {
-		if(v == NULL){
+	while (vertex->e > 0) {
+		if (v == NULL) {
 			//TODO:
 			//RELABEL(vertex);
 			vertex->current = vertex->edges;
-		} else if(v->flow == 1){
+		} else if (v->flow == 1) {
 			//TODO:
 			//PUSH(vertex, v);
 		} else {
 			vertex->current = vertex->current->next;
 		}
-
-
 
 	}
 //	while vertex.e > 0
@@ -167,22 +172,26 @@ int relabel_to_front(t_graph graph, t_node source) {
 	initialize_preflow(graph, source);
 
 	int i_vertex, old_height;
-	t_node vertex = NULL;
-
-	for(i_vertex=0; i_vertex < graph->max_vertex; ++i_vertex){
-
+	t_node vertex = graph->vertexs[list_head_index];
+	while (vertex != NULL) {
+		if (vertex->node_id != source->node_id) {
+			vertex->current = vertex->edges;
+		}
 	}
+	vertex = graph->vertexs[list_head_index];
 
-	while(vertex != NULL){
+	while (vertex != NULL) {
 		old_height = vertex->h;
 		discharge(vertex);
-		if(vertex->h > old_height){
-
+		if (vertex->h > old_height) {
+			switch_to_front(graph, vertex);
 		}
+		vertex = graph->vertexs[vertex->current->next->dest_node_id];
 
 	}
-//	L = vertexes except source
+//	L = vertexes
 //	for each vertex u in L
+//	  if u == source break;
 //	    u.current = first vertex in u.edges
 //	u = L.head
 //	while u == NULL
@@ -229,8 +238,32 @@ t_node create_node(int node_id) {
 	new_node->h = 0;
 	new_node->e = 0;
 	new_node->critical_link = FALSE;
+
+	if (node_id == 0) {
+		new_node->prev_id = NULL_ID
+		;
+	} else {
+		new_node->prev_id = node_id - 1;
+	}
+
+	if (node_id == V - 1) {
+		new_node->next_id = NULL_ID
+		;
+	} else {
+		new_node->next_id = node_id + 1;
+	}
+
 	new_node->current = NULL;
 	return new_node;
+}
+
+void switch_to_front(t_graph graph, t_node node) {
+	graph->vertexs[node->prev_id]->next_id = node->next_id;
+	graph->vertexs[node->next_id]->prev_id = node->prev_id;
+	node->prev_id = NULL_ID
+	;
+	node->next_id = list_head_index;
+	list_head_index = node->node_id;
 }
 
 void destroy_node(t_node node) {
@@ -242,6 +275,11 @@ t_edge create_edge(int dest_node_id) {
 	new_edge->dest_node_id = dest_node_id;
 	new_edge->next = NULL;
 	new_edge->flow = FALSE;
+	if (dest_node_id == V) {
+		new_edge->capacity = INFINITY;
+	} else {
+		new_edge->capacity = 1;
+	}
 	return new_edge;
 }
 
@@ -252,11 +290,12 @@ void destroy_edge(t_edge edge) {
 t_graph create_graph(int num_vertexs) {
 	int v;
 	t_graph graph = malloc(sizeof(struct Graph));
-	graph->vertexs = malloc(sizeof(t_node) * num_vertexs);
+	graph->vertexs = malloc(sizeof(t_node) * (num_vertexs + 1));
 	graph->max_vertex = num_vertexs;
 	for (v = 0; v < num_vertexs; ++v) {
 		graph->vertexs[v] = create_node(v);
 	}
+	graph->vertexs[v] = create_node(v); // supersink
 	return graph;
 }
 
