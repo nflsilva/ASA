@@ -16,8 +16,8 @@
  *****************************************************************/
 struct Edge {
 	int dest_node_id;
-	int flow;
 	int capacity;
+	struct Edge* anti_parallel;
 	struct Edge* next;
 };
 
@@ -75,6 +75,7 @@ void print_output();
 void initialize_preflow(t_graph graph, t_node source);
 void discharge(t_node vertex);
 int relabel_to_front();
+void push(t_node origin, t_edge edge);
 
 /*****************************************************************
  ***************************Global Vars***************************
@@ -118,54 +119,40 @@ void initialize_preflow(t_graph graph, t_node source) {
 		graph->vertexs[i_vertex]->e = 0;
 		edge = graph->vertexs[i_vertex]->edges;
 		while (edge != NULL) {
-			edge->flow = 0;
+			edge->capacity = 1;
 			edge = edge->next;
 		}
 	}
-	source->h = V;
+	source->h = V + 1; /* includes the super sink*/
 	edge = graph->vertexs[source->node_id]->edges;
 	while (edge != NULL) {
-		edge->flow = 1;
+		edge->capacity = 0;
 		graph->vertexs[edge->dest_node_id]->e = 1;
 		source->e--;
 		edge = edge->next;
 	}
-
-	// for each vertex v
-	//    v.h = 0;
-	//    v.e = 0;
-	// for each edge e
-	//    e.flow = 0
-	// source.h = |V|
-	// for each v in Adj(source)
-	//    edge.flow = 1;
-	//    v.e = 1;
-	//    source.e--;
 }
 
 void discharge(t_node vertex) {
-	t_edge v = vertex->current;
+	t_edge edge = NULL;
+	int min_height = vertex->h;
+
 	while (vertex->e > 0) {
-		if (v == NULL) {
-			//TODO:
-			//RELABEL(vertex);
+		edge = vertex->current;
+		if (edge == NULL) {
+			vertex->h = min_height++;
 			vertex->current = vertex->edges;
-		} else if (v->flow == 1) {
-			//TODO:
-			//PUSH(vertex, v);
+		} else if (edge->capacity > 0
+				&& graph->vertexs[edge->dest_node_id]->h < vertex->h) { /*FIXME:*/
+			push(vertex, edge);
+			if (min_height > graph->vertexs[edge->dest_node_id]->h) {
+				min_height = graph->vertexs[edge->dest_node_id]->h;
+			}
 		} else {
 			vertex->current = vertex->current->next;
+			/* FIXME: check if there's need to update min_height*/
 		}
-
 	}
-//	while vertex.e > 0
-//	   v = vertex.current
-//	   if v == NULL
-//	       RELABEL(vertex)
-//	       vertex.current = first in vertex edges;
-//	   else if (vertex, v).flow == 1
-//		   PUSH(vertex ,v)
-//	   else vertex.current = vertex.current.next;
 }
 
 int relabel_to_front(t_graph graph, t_node source) {
@@ -189,18 +176,17 @@ int relabel_to_front(t_graph graph, t_node source) {
 		vertex = graph->vertexs[vertex->current->next->dest_node_id];
 
 	}
-//	L = vertexes
-//	for each vertex u in L
-//	  if u == source break;
-//	    u.current = first vertex in u.edges
-//	u = L.head
-//	while u == NULL
-//	    old-height = u.h
-//	    DISCHARGE(u)
-//	    if u.h > old-height
-//	        move u to the front of list L
-//	    u = u.current.next
-	return 0;
+
+	return -source->e;
+}
+
+void push(t_node origin, t_edge edge) {
+	if (edge->capacity != INFINITY) {
+		edge->capacity = 0;
+	}
+	edge->anti_parallel->capacity++;
+	origin->e--;
+	graph->vertexs[edge->dest_node_id]->e++;
 }
 
 /*****************************************************************
@@ -218,11 +204,16 @@ void read_graph() {
 		scanf("%d %d", &orig_id, &dest_id);
 		add_connection(graph, orig_id, dest_id);
 		add_connection(graph, dest_id, orig_id);
+		graph->vertexs[orig_id]->edges->anti_parallel =
+				graph->vertexs[dest_id]->edges->anti_parallel;
+		graph->vertexs[dest_id]->edges->anti_parallel =
+				graph->vertexs[orig_id]->edges->anti_parallel;
+
 	}
 }
 
 void print_output() {
-	// TODO:
+	// TOD0:
 	// probably won't be implemented here... will be done in main()
 	// print lista de outputs
 }
@@ -267,14 +258,15 @@ void switch_to_front(t_graph graph, t_node node) {
 }
 
 void destroy_node(t_node node) {
-	/*TODO: Implement this*/
+	/*TOD0: Implement this*/
 }
 
 t_edge create_edge(int dest_node_id) {
 	t_edge new_edge = malloc(sizeof(struct Edge));
 	new_edge->dest_node_id = dest_node_id;
+	new_edge->anti_parallel = NULL;
 	new_edge->next = NULL;
-	new_edge->flow = FALSE;
+	new_edge->capacity = FALSE;
 	if (dest_node_id == V) {
 		new_edge->capacity = INFINITY;
 	} else {
@@ -284,7 +276,7 @@ t_edge create_edge(int dest_node_id) {
 }
 
 void destroy_edge(t_edge edge) {
-	/*TODO: Implement this*/
+	/*TOD0: Implement this*/
 }
 
 t_graph create_graph(int num_vertexs) {
@@ -300,7 +292,7 @@ t_graph create_graph(int num_vertexs) {
 }
 
 void destroy_graph(t_graph graph) {
-	/*TODO: Implement this*/
+	/*TOD0: Implement this*/
 }
 
 void add_connection(t_graph graph, int orig_node_id, int dest_node_id) {
