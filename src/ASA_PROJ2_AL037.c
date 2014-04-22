@@ -4,7 +4,7 @@
 #define TRUE 1
 #define FALSE 0
 
-#define NULL_ID -1;
+#define NULL_ID -1
 #define INFINITY 2
 
 #ifndef NULL
@@ -185,26 +185,50 @@ void discharge(t_node vertex) {
 
 int relabel_to_front(t_graph graph, t_node source) {
 	initialize_preflow(graph, source);
+	list_head_index = 0;
 
 	int i_vertex, old_height;
-	t_node vertex = graph->vertexs[list_head_index];
-	while (vertex != NULL) {
-		if (vertex->node_id != source->node_id) {
+	t_node vertex = NULL;
+	t_edge source_tmp_edge = NULL;
+
+	source_tmp_edge = source->edges;
+	source->edges = source_tmp_edge->next;
+
+	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
+		if (i_vertex != source->node_id) {
+			vertex = graph->vertexs[i_vertex];
 			vertex->current = vertex->edges;
 		}
 	}
+
 	vertex = graph->vertexs[list_head_index];
 
 	while (vertex != NULL) {
+		if (vertex->node_id == source->node_id) {
+			if (vertex->next_id == NULL_ID) {
+				break;
+			} else {
+				vertex = graph->vertexs[vertex->next_id];
+			}
+			continue;
+		}
+
 		old_height = vertex->h;
 		discharge(vertex);
 		if (vertex->h > old_height) {
 			switch_to_front(graph, vertex);
 		}
-		vertex = graph->vertexs[vertex->current->next->dest_node_id];
 
+		if (vertex->next_id == NULL_ID) {
+			break;
+		} else {
+			vertex = graph->vertexs[vertex->next_id];
+		}
 	}
 
+	source->edges = source_tmp_edge;
+
+	// max flow
 	return -source->e;
 }
 
@@ -232,9 +256,9 @@ void read_graph() {
 		add_connection(graph, orig_id, dest_id);
 		add_connection(graph, dest_id, orig_id);
 		graph->vertexs[orig_id]->edges->anti_parallel =
-				graph->vertexs[dest_id]->edges->anti_parallel;
+				graph->vertexs[dest_id]->edges;
 		graph->vertexs[dest_id]->edges->anti_parallel =
-				graph->vertexs[orig_id]->edges->anti_parallel;
+				graph->vertexs[orig_id]->edges;
 
 	}
 }
@@ -249,9 +273,9 @@ void read_problem(t_graph graph) {
 		add_connection(graph, crit_node_id, V);
 		add_connection(graph, V, crit_node_id);
 		graph->vertexs[crit_node_id]->edges->anti_parallel =
-				graph->vertexs[V]->edges->anti_parallel;
+				graph->vertexs[V]->edges;
 		graph->vertexs[V]->edges->anti_parallel =
-				graph->vertexs[crit_node_id]->edges->anti_parallel;
+				graph->vertexs[crit_node_id]->edges;
 		n_crit_nodes--;
 	}
 }
@@ -299,8 +323,14 @@ t_node create_node(int node_id) {
 }
 
 void switch_to_front(t_graph graph, t_node node) {
+	if (node->node_id == list_head_index) {
+		return;
+	}
+
 	graph->vertexs[node->prev_id]->next_id = node->next_id;
-	graph->vertexs[node->next_id]->prev_id = node->prev_id;
+	if (node->next_id != NULL_ID) {
+		graph->vertexs[node->next_id]->prev_id = node->prev_id;
+	}
 	node->prev_id = NULL_ID
 	;
 	node->next_id = list_head_index;

@@ -1,6 +1,6 @@
 CC=gcc
 FILE =src/ASA_PROJ2_AL037.c
-CFLAGS=-c -Wall -ansi -g
+CFLAGS=-g
 MOOFLAGS=-c -o3 -Wall -ansi -g $(FILE) -lm
 LDFLAGS= 
 SOURCES=src/*
