@@ -171,7 +171,7 @@ void discharge(t_node vertex) {
 			vertex->h = min_height++;
 			vertex->current = vertex->edges;
 		} else if (edge->capacity > 0
-				&& graph->vertexs[edge->dest_node_id]->h < vertex->h) { /*FIXME:*/
+				&& graph->vertexs[edge->dest_node_id]->h + 1 == vertex->h) { /*FIXME:*/
 			push(vertex, edge);
 			if (min_height > graph->vertexs[edge->dest_node_id]->h) {
 				min_height = graph->vertexs[edge->dest_node_id]->h;
@@ -201,6 +201,18 @@ int relabel_to_front(t_graph graph, t_node source) {
 		}
 	}
 
+
+
+
+//	int i;
+//		for(i = 0; i < V; i++) {
+//			printf("Vertex %d: Excess %d | Height: %d\n", i, graph->vertexs[i], graph->vertexs[i]);
+//		}
+
+
+
+
+
 	vertex = graph->vertexs[list_head_index];
 
 	while (vertex != NULL) {
@@ -228,7 +240,11 @@ int relabel_to_front(t_graph graph, t_node source) {
 
 	source->edges = source_tmp_edge;
 
-	// max flow
+	/* max flow */
+//	for(i = 0; i < V; i++) {
+//		printf("Vertex %d: Excess %d | Height: %d\n", i, graph->vertexs[i], graph->vertexs[i]);
+//	}
+
 	return -source->e;
 }
 
@@ -327,6 +343,22 @@ void switch_to_front(t_graph graph, t_node node) {
 		return;
 	}
 
+	t_node current = graph->vertexs[list_head_index];
+//	printf("BEFORE RELABEL TO FRONT:\n");
+//	int i = 0;
+//	while (current != NULL) {
+//		printf("THIS: %d , PREV: %d, NEXT: %d\n", current->node_id,
+//				current->prev_id, current->next_id);
+//		if (current->next_id != NULL_ID) {
+//			current = graph->vertexs[current->next_id];
+//		} else {
+//			current = NULL;
+//		}
+//		i++;
+//		if (i == 6)
+//			break;
+//	}
+
 	graph->vertexs[node->prev_id]->next_id = node->next_id;
 	if (node->next_id != NULL_ID) {
 		graph->vertexs[node->next_id]->prev_id = node->prev_id;
@@ -334,7 +366,25 @@ void switch_to_front(t_graph graph, t_node node) {
 	node->prev_id = NULL_ID
 	;
 	node->next_id = list_head_index;
+
+	graph->vertexs[list_head_index]->prev_id = node->node_id;
 	list_head_index = node->node_id;
+
+	current = graph->vertexs[list_head_index];
+//	printf("AFTER RELABEL TO FRONT:\n");
+//	i=0;
+//	while (current != NULL) {
+//		printf("THIS: %d , PREV: %d, NEXT: %d\n", current->node_id,
+//				current->prev_id, current->next_id);
+//		if (current->next_id != NULL_ID) {
+//			current = graph->vertexs[current->next_id];
+//		} else {
+//			current = NULL;
+//		}
+//		i++;
+//		if (i == 6)
+//			break;
+//	}
 }
 
 void destroy_node(t_node node) {
