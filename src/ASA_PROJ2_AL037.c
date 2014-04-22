@@ -33,7 +33,7 @@ struct Node {
 	int h;
 	int e;
 	int node_id;
-	int critical_link;
+	int is_critical;
 	int prev_id;
 	int next_id;
 	t_edge current;
@@ -66,7 +66,9 @@ void switch_to_front(t_graph graph, t_node vertex);
  *****************************************************************/
 
 void read_graph();
+void read_problem();
 void print_output();
+void reset_crit_points(t_graph graph);
 
 /*****************************************************************
  ***************************Algoritm.h****************************
@@ -83,13 +85,39 @@ int relabel_to_front();
 t_graph graph = NULL;
 int list_head_index = 0;
 int V, E;
-int links_to_close = 0;
+int links_to_cut;
 
 int main() {
+	int n_problems, vertex_id, max_flow;
+	t_node vertex;
 	read_graph();
 
 	initialize_preflow(graph, graph->vertexs[0]);
-	// n_problems = read the problem line count
+	scanf("%d", &n_problems);
+
+	while(n_problems>0){
+		links_to_cut = 0;
+		reset_crit_points(graph);
+		read_problem(graph);
+		for(vertex_id = 0; vertex_id < graph->max_vertex; ++vertex_id){
+			vertex = graph->vertexs[vertex_id];
+			if(vertex->is_critical){
+				max_flow = relabel_to_front(graph, vertex);
+			}
+			if(max_flow == 0){
+				links_to_cut = 0;
+				break;
+			}else if(max_flow < links_to_cut){
+				links_to_cut = max_flow;
+			}
+
+		}
+		--n_problems;
+		printf("%d\n",links_to_cut);
+	}
+
+
+	//n_problems = read the problem line count
 
 //  for each line (problem)
 	//  reset critic points
@@ -101,6 +129,7 @@ int main() {
 	//	       break;
 	//	   else if maxflow < links_to_cut
 	//		   links_to_cut = maxflow
+
 //  print links_to_cute
 
 	return 0;
@@ -203,10 +232,12 @@ int relabel_to_front(t_graph graph, t_node source) {
 	return 0;
 }
 
+
+
+
 /*****************************************************************
  ***************************I/O***********************************
  *****************************************************************/
-
 void read_graph() {
 	int line;
 	int orig_id, dest_id;
@@ -221,6 +252,16 @@ void read_graph() {
 	}
 }
 
+void read_problem(t_graph graph){
+	int n_crit_nodes, crit_node_id;
+	scanf("%d", &n_crit_nodes);
+	while(n_crit_nodes>0){
+		scanf("%d", &crit_node_id);
+		graph->vertexs[crit_node_id];
+		n_crit_nodes--;
+	}
+}
+
 void print_output() {
 	// TODO:
 	// probably won't be implemented here... will be done in main()
@@ -230,6 +271,13 @@ void print_output() {
 /*****************************************************************
  ************************ Data structures ************************
  *****************************************************************/
+void reset_crit_points(t_graph graph){
+	int vertex_id;
+	for(vertex_id = 0; vertex_id < graph->max_vertex; ++vertex_id){
+		graph->vertexs[vertex_id]->is_critical = FALSE;
+	}
+}
+
 
 t_node create_node(int node_id) {
 	t_node new_node = malloc(sizeof(struct Node));
@@ -237,7 +285,7 @@ t_node create_node(int node_id) {
 	new_node->edges = NULL;
 	new_node->h = 0;
 	new_node->e = 0;
-	new_node->critical_link = FALSE;
+	new_node->is_critical = FALSE;
 
 	if (node_id == 0) {
 		new_node->prev_id = NULL_ID
