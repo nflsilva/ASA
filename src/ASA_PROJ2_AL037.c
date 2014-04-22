@@ -79,6 +79,8 @@ void discharge(t_node vertex);
 int relabel_to_front();
 void push(t_node origin, t_edge edge);
 
+void debug();
+
 /*****************************************************************
  ***************************Global Vars***************************
  *****************************************************************/
@@ -93,22 +95,26 @@ int main() {
 	t_node vertex;
 	read_graph();
 
+
 	initialize_preflow(graph, graph->vertexs[0]);
+
+	/*debug(); FIXME: rm me*/
 	scanf("%d", &n_problems);
 
 	while (n_problems > 0) {
-		links_to_cut = 0;
+		links_to_cut = -1;
 		reset_crit_points(graph);
 		read_problem(graph);
 		for (vertex_id = 0; vertex_id < graph->max_vertex; ++vertex_id) {
 			vertex = graph->vertexs[vertex_id];
 			if (vertex->is_critical) {
 				max_flow = relabel_to_front(graph, vertex);
+				/*printf("MaxFlow: %d\n", max_flow);*/
 			}
 			if (max_flow == 0) {
 				links_to_cut = 0;
 				break;
-			} else if (max_flow < links_to_cut) {
+			} else if (max_flow < links_to_cut || links_to_cut < 0) {
 				links_to_cut = max_flow;
 			}
 
@@ -117,22 +123,36 @@ int main() {
 		printf("%d\n", links_to_cut);
 	}
 
-	//n_problems = read the problem line count
+	/*n_problems = read the problem line count
 
-//  for each line (problem)
-	//  reset critic points
-	//  read_problem(); <- set the critic points
-	//	for each V in critics
-	//	   maxflow = relabel_to_front()
-	//	   if maxflow == 0
-	//	       links_to_cut < 2;
-	//	       break;
-	//	   else if maxflow < links_to_cut
-	//		   links_to_cut = maxflow
+  for each line (problem)
+	  reset critic points
+	  read_problem(); <- set the critic points
+		for each V in critics
+		   maxflow = relabel_to_front()
+		   if maxflow == 0
+		       links_to_cut < 2;
+		       break;
+		   else if maxflow < links_to_cut
+			   links_to_cut = maxflow
 
-//  print links_to_cute
+  print links_to_cute*/
 
 	return 0;
+}
+
+void debug() {
+	int vertex_id;
+	t_node n;
+	for (vertex_id = 0; vertex_id < graph->max_vertex; vertex_id++) {
+		n = graph->vertexs[vertex_id];
+		printf("Node id %d :: Exc %d :: Hei %d :: Crit %d \n", n->node_id, n->e,
+				n->h, n->is_critical);
+	}
+	n = graph->vertexs[vertex_id];
+	printf("SINK: Node id %d :: Exc %d :: Hei %d :: Crit %d \n", n->node_id, n->e,
+			n->h, n->is_critical);
+	printf("\n\n");
 }
 
 /*****************************************************************
@@ -141,7 +161,7 @@ int main() {
 void initialize_preflow(t_graph graph, t_node source) {
 	int i_vertex;
 	t_edge edge;
-	t_node adj_vertex;
+	/*t_node adj_vertex;*/
 	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
 		graph->vertexs[i_vertex]->h = 0;
 		graph->vertexs[i_vertex]->e = 0;
@@ -200,19 +220,7 @@ int relabel_to_front(t_graph graph, t_node source) {
 			vertex->current = vertex->edges;
 		}
 	}
-
-
-
-
-//	int i;
-//		for(i = 0; i < V; i++) {
-//			printf("Vertex %d: Excess %d | Height: %d\n", i, graph->vertexs[i], graph->vertexs[i]);
-//		}
-
-
-
-
-
+	/*debug(); FIXME: rm me*/
 	vertex = graph->vertexs[list_head_index];
 
 	while (vertex != NULL) {
@@ -239,11 +247,7 @@ int relabel_to_front(t_graph graph, t_node source) {
 	}
 
 	source->edges = source_tmp_edge;
-
-	/* max flow */
-//	for(i = 0; i < V; i++) {
-//		printf("Vertex %d: Excess %d | Height: %d\n", i, graph->vertexs[i], graph->vertexs[i]);
-//	}
+	/*debug(); FIXME: rm me*/
 
 	return -source->e;
 }
@@ -297,9 +301,9 @@ void read_problem(t_graph graph) {
 }
 
 void print_output() {
-	// TOD0:
-	// probably won't be implemented here... will be done in main()
-	// print lista de outputs
+	/* TOD0:
+	 probably won't be implemented here... will be done in main()
+	 print lista de outputs*/
 }
 
 /*****************************************************************
@@ -343,21 +347,22 @@ void switch_to_front(t_graph graph, t_node node) {
 		return;
 	}
 
-	t_node current = graph->vertexs[list_head_index];
-//	printf("BEFORE RELABEL TO FRONT:\n");
-//	int i = 0;
-//	while (current != NULL) {
-//		printf("THIS: %d , PREV: %d, NEXT: %d\n", current->node_id,
-//				current->prev_id, current->next_id);
-//		if (current->next_id != NULL_ID) {
-//			current = graph->vertexs[current->next_id];
-//		} else {
-//			current = NULL;
-//		}
-//		i++;
-//		if (i == 6)
-//			break;
-//	}
+	/*t_node current = graph->vertexs[list_head_index];
+
+	printf("BEFORE RELABEL TO FRONT:\n");
+	int i = 0;
+	while (current != NULL) {
+		printf("THIS: %d , PREV: %d, NEXT: %d\n", current->node_id,
+				current->prev_id, current->next_id);
+		if (current->next_id != NULL_ID) {
+			current = graph->vertexs[current->next_id];
+		} else {
+			current = NULL;
+		}
+		i++;
+		if (i == 6)
+			break;
+	}*/
 
 	graph->vertexs[node->prev_id]->next_id = node->next_id;
 	if (node->next_id != NULL_ID) {
@@ -370,21 +375,22 @@ void switch_to_front(t_graph graph, t_node node) {
 	graph->vertexs[list_head_index]->prev_id = node->node_id;
 	list_head_index = node->node_id;
 
-	current = graph->vertexs[list_head_index];
-//	printf("AFTER RELABEL TO FRONT:\n");
-//	i=0;
-//	while (current != NULL) {
-//		printf("THIS: %d , PREV: %d, NEXT: %d\n", current->node_id,
-//				current->prev_id, current->next_id);
-//		if (current->next_id != NULL_ID) {
-//			current = graph->vertexs[current->next_id];
-//		} else {
-//			current = NULL;
-//		}
-//		i++;
-//		if (i == 6)
-//			break;
-//	}
+	/*current = graph->vertexs[list_head_index];
+
+	printf("AFTER RELABEL TO FRONT:\n");
+	i=0;
+	while (current != NULL) {
+		printf("THIS: %d , PREV: %d, NEXT: %d\n", current->node_id,
+				current->prev_id, current->next_id);
+		if (current->next_id != NULL_ID) {
+			current = graph->vertexs[current->next_id];
+		} else {
+			current = NULL;
+		}
+		i++;
+		if (i == 6)
+			break;
+	}*/
 }
 
 void destroy_node(t_node node) {
@@ -417,7 +423,7 @@ t_graph create_graph(int num_vertexs) {
 	for (v = 0; v < num_vertexs; ++v) {
 		graph->vertexs[v] = create_node(v);
 	}
-	graph->vertexs[v] = create_node(v); // supersink
+	graph->vertexs[v] = create_node(v); /* supersink*/
 	return graph;
 }
 
