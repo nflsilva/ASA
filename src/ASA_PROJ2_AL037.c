@@ -4,6 +4,10 @@
 #define TRUE 1
 #define FALSE 0
 
+#define COLOR_WHITE 0
+#define COLOR_GRAY 1
+#define COLOR_BLACK 2
+
 #define NULL_ID -1
 #define INFINITY 3892920
 
@@ -36,6 +40,7 @@ struct Node {
 	int is_critical;
 	int prev_id;
 	int next_id;
+	int color;
 	t_edge current;
 	t_edge edges;
 };
@@ -51,6 +56,7 @@ void destroy_node(t_node node);
 
 struct Graph {
 	int max_vertex;
+	int* index_array;
 	t_node* vertexs;
 };
 
@@ -73,7 +79,7 @@ void reset_crit_points(t_graph graph);
 /*****************************************************************
  ***************************Algoritm.h****************************
  *****************************************************************/
-
+void dfs_visit(t_graph graph, t_node node);
 void initialize_preflow(t_graph graph, t_node source);
 void discharge(t_node vertex);
 int relabel_to_front();
@@ -89,6 +95,8 @@ t_graph graph = NULL;
 int list_head_index = 0;
 int V, E;
 int links_to_cut;
+int crits_found = 0;
+int checked_nodes = 0;
 
 int main() {
 	int n_problems, vertex_id, max_flow;
@@ -105,6 +113,7 @@ int main() {
 		reset_crit_points(graph);
 		if (read_problem(graph) == 0) { /* menos de 2 pontos criticos */
 			printf("%d\n", 0);
+			--n_problems;
 			continue;
 		}
 		for (vertex_id = 0; vertex_id < graph->max_vertex; ++vertex_id) {
@@ -140,6 +149,25 @@ int main() {
 	 print links_to_cute*/
 
 	return 0;
+}
+
+void dfs_visit(t_graph graph, t_node vertex) {
+	vertex->color = COLOR_GRAY;
+	t_edge edges = vertex->edges;
+	t_node adj_vertex=NULL;
+
+	if(vertex->is_critical == TRUE){
+		++crits_found;
+	}
+
+	while(edges != NULL){
+		adj_vertex = graph->vertexs[edges->dest_node_id];
+        if(adj_vertex->color == COLOR_WHITE && adj_vertex->node_id != V){
+			dfs_visit(graph, adj_vertex);
+        }
+		edges=edges->next;
+	}
+    vertex->color = COLOR_BLACK;
 }
 
 void debug() {
@@ -302,9 +330,16 @@ void read_graph() {
 }
 
 int read_problem(t_graph graph) {
-	int n_crit_nodes, crit_node_id;
+	int n_crit_nodes, crit_node_id, saved;
+	crits_found = 0;
+	int i;
+	for(i=0; i< graph->max_vertex; ++i){
+		graph->vertexs[i]->color = COLOR_WHITE;
+	}
 
 	scanf("%d", &n_crit_nodes);
+	saved = n_crit_nodes;
+
 
 	if (n_crit_nodes < 2) {
 		return 0;
@@ -320,6 +355,12 @@ int read_problem(t_graph graph) {
 		graph->vertexs[V]->edges->anti_parallel =
 				graph->vertexs[crit_node_id]->edges;
 		n_crit_nodes--;
+	}
+
+
+	dfs_visit(graph, graph->vertexs[crit_node_id]);
+	if(saved != crits_found){
+		return 0;
 	}
 
 	return -1;
@@ -349,6 +390,7 @@ t_node create_node(int node_id) {
 	t_node new_node = malloc(sizeof(struct Node));
 	new_node->node_id = node_id;
 	new_node->edges = NULL;
+	new_node->color=COLOR_WHITE;
 	new_node->h = 0;
 	new_node->e = 0;
 	new_node->is_critical = FALSE;
@@ -448,9 +490,11 @@ t_graph create_graph(int num_vertexs) {
 	int v;
 	t_graph graph = malloc(sizeof(struct Graph));
 	graph->vertexs = malloc(sizeof(t_node) * (num_vertexs + 1));
+	graph->index_array = malloc(sizeof(int) * num_vertexs);
 	graph->max_vertex = num_vertexs;
 	for (v = 0; v < num_vertexs; ++v) {
 		graph->vertexs[v] = create_node(v);
+		graph->index_array[v] = v;
 	}
 	graph->vertexs[v] = create_node(v); /* supersink*/
 	return graph;
