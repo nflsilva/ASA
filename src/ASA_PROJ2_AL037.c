@@ -66,7 +66,7 @@ void switch_to_front(t_graph graph, t_node vertex);
  *****************************************************************/
 
 void read_graph();
-void read_problem();
+int read_problem();
 void print_output();
 void reset_crit_points(t_graph graph);
 
@@ -103,7 +103,10 @@ int main() {
 	while (n_problems > 0) {
 		links_to_cut = -1;
 		reset_crit_points(graph);
-		read_problem(graph);
+		if (read_problem(graph) == 0) { /* menos de 2 pontos criticos */
+			printf("%d\n", 0);
+			continue;
+		}
 		for (vertex_id = 0; vertex_id < graph->max_vertex; ++vertex_id) {
 			vertex = graph->vertexs[vertex_id];
 			if (vertex->is_critical) {
@@ -166,9 +169,9 @@ void initialize_preflow(t_graph graph, t_node source) {
 		edge = graph->vertexs[i_vertex]->edges;
 		while (edge != NULL) {
 			if (edge->dest_node_id == V) {
-				edge->capacity = 1;
-			} else {
 				edge->capacity = INFINITY;
+			} else {
+				edge->capacity = 1;
 			}
 			edge = edge->next;
 		}
@@ -272,7 +275,6 @@ void push(t_node origin, t_edge edge) {
 		edge->anti_parallel->capacity++;
 	} else {
 		graph->vertexs[edge->dest_node_id]->e += origin->e;
-		printf("\n%d\n", edge->dest_node_id);
 		origin->e = 0;
 	}
 }
@@ -299,10 +301,15 @@ void read_graph() {
 	}
 }
 
-void read_problem(t_graph graph) {
+int read_problem(t_graph graph) {
 	int n_crit_nodes, crit_node_id;
 
 	scanf("%d", &n_crit_nodes);
+
+	if (n_crit_nodes < 2) {
+		return 0;
+	}
+
 	while (n_crit_nodes > 0) {
 		scanf("%d", &crit_node_id);
 		graph->vertexs[crit_node_id]->is_critical = TRUE;
@@ -314,6 +321,8 @@ void read_problem(t_graph graph) {
 				graph->vertexs[crit_node_id]->edges;
 		n_crit_nodes--;
 	}
+
+	return -1;
 }
 
 void print_output() {
