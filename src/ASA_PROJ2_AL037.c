@@ -5,7 +5,7 @@
 #define FALSE 0
 
 #define NULL_ID -1
-#define INFINITY 2
+#define INFINITY 3892920
 
 #ifndef NULL
 #define NULL   ((void *) 0)
@@ -165,7 +165,11 @@ void initialize_preflow(t_graph graph, t_node source) {
 		graph->vertexs[i_vertex]->e = 0;
 		edge = graph->vertexs[i_vertex]->edges;
 		while (edge != NULL) {
-			edge->capacity = 1;
+			if (edge->dest_node_id == V) {
+				edge->capacity = 1;
+			} else {
+				edge->capacity = INFINITY;
+			}
 			edge = edge->next;
 		}
 	}
@@ -263,11 +267,14 @@ int relabel_to_front(t_graph graph, t_node source) {
 void push(t_node origin, t_edge edge) {
 	if (edge->capacity != INFINITY) {
 		edge->capacity = 0;
+		graph->vertexs[edge->dest_node_id]->e++;
+		origin->e--;
+		edge->anti_parallel->capacity++;
+	} else {
+		graph->vertexs[edge->dest_node_id]->e += origin->e;
+		printf("\n%d\n", edge->dest_node_id);
+		origin->e = 0;
 	}
-	edge->capacity = 0; /* FIXME: Verify */
-	edge->anti_parallel->capacity++;
-	origin->e--;
-	graph->vertexs[edge->dest_node_id]->e++;
 }
 
 /*****************************************************************
