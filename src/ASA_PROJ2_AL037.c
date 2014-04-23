@@ -105,7 +105,6 @@ int main() {
 
 	initialize_preflow(graph, graph->vertexs[0]);
 
-	/*debug(); FIXME: rm me*/
 	scanf("%d", &n_problems);
 
 	while (n_problems > 0) {
@@ -218,10 +217,21 @@ void discharge(t_node vertex) {
 	t_edge edge = NULL;
 	int min_height = vertex->h;
 
+
 	while (vertex->e > 0) {
 		edge = vertex->current;
 		if (edge == NULL) {
-			vertex->h = min_height++;
+
+			edge = vertex->edges;
+			while(edge != NULL){
+				if(edge->capacity > 0 && min_height > graph->vertexs[edge->dest_node_id]->h){
+					min_height = graph->vertexs[edge->dest_node_id]->h;
+				}
+				edge = edge->next;
+			}
+
+			min_height++;
+			vertex->h = min_height;
 			vertex->current = vertex->edges;
 		} else if (edge->capacity > 0
 				&& graph->vertexs[edge->dest_node_id]->h + 1 == vertex->h) { /*FIXME:*/
