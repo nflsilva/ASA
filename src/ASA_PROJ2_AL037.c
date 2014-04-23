@@ -40,7 +40,6 @@ struct Node {
 	int is_critical;
 	int prev_id;
 	int next_id;
-	int color;
 	t_edge current;
 	t_edge edges;
 };
@@ -73,19 +72,19 @@ void switch_to_front(t_graph graph, t_node vertex);
 
 void read_graph();
 int read_problem();
-void print_output();
 void reset_crit_points(t_graph graph);
 
 /*****************************************************************
  ***************************Algoritm.h****************************
  *****************************************************************/
-void dfs_visit(t_graph graph, t_node node);
 void initialize_preflow(t_graph graph, t_node source);
 void discharge(t_node vertex);
 int relabel_to_front();
 void push(t_node origin, t_edge edge);
 
+void print_list();
 void debug();
+void reset_list();
 
 /*****************************************************************
  ***************************Global Vars***************************
@@ -111,7 +110,7 @@ int main() {
 		links_to_cut = -1;
 		reset_crit_points(graph);
 		if (read_problem(graph) == 0) { /* menos de 2 pontos criticos */
-			printf("%d\n", 0);
+			printf("0\n");
 			--n_problems;
 			continue;
 		}
@@ -150,25 +149,6 @@ int main() {
 	return 0;
 }
 
-void dfs_visit(t_graph graph, t_node vertex) {
-	vertex->color = COLOR_GRAY;
-	t_edge edges = vertex->edges;
-	t_node adj_vertex=NULL;
-
-	if(vertex->is_critical == TRUE){
-		++crits_found;
-	}
-
-	while(edges != NULL){
-		adj_vertex = graph->vertexs[edges->dest_node_id];
-        if(adj_vertex->color == COLOR_WHITE && adj_vertex->node_id != V){
-			dfs_visit(graph, adj_vertex);
-        }
-		edges=edges->next;
-	}
-    vertex->color = COLOR_BLACK;
-}
-
 void debug() {
 	int vertex_id;
 	t_node n;
@@ -183,6 +163,36 @@ void debug() {
 	printf("\n\n");
 }
 
+void print_list() {
+	t_node vertex;
+	vertex = graph->vertexs[list_head_index];
+	while (vertex != NULL) {
+		printf("Node id %d :: Prev %d :: Next %d\n", vertex->node_id,
+				vertex->prev_id, vertex->next_id);
+		if (vertex->next_id == NULL_ID) {
+			vertex = NULL;
+		} else {
+			vertex = graph->vertexs[vertex->next_id];
+		}
+	}
+}
+
+void reset_list() {
+	int vertex_id = 0;
+
+	graph->vertexs[vertex_id]->prev_id = NULL_ID;
+	graph->vertexs[vertex_id]->next_id = vertex_id + 1;
+
+	for (vertex_id = 1; vertex_id < graph->max_vertex - 1; ++vertex_id) {
+		graph->vertexs[vertex_id]->prev_id = vertex_id - 1;
+		graph->vertexs[vertex_id]->next_id = vertex_id + 1;
+	}
+	graph->vertexs[vertex_id]->prev_id = vertex_id - 1;
+	graph->vertexs[vertex_id]->next_id = NULL_ID;
+	list_head_index = 0;
+
+}
+
 /*****************************************************************
  ***************************Algorithm*****************************
  *****************************************************************/
@@ -190,13 +200,14 @@ void initialize_preflow(t_graph graph, t_node source) {
 	int i_vertex;
 	t_edge edge;
 	/*t_node adj_vertex;*/
-	for (i_vertex = 0; i_vertex < graph->max_vertex + 1; ++i_vertex) {
+	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
 		graph->vertexs[i_vertex]->h = 0;
 		graph->vertexs[i_vertex]->e = 0;
 		edge = graph->vertexs[i_vertex]->edges;
 		while (edge != NULL) {
 			if (edge->dest_node_id == V) {
 				edge->capacity = INFINITY;
+				edge->anti_parallel = 0;
 			} else {
 				edge->capacity = 1;
 			}
@@ -204,7 +215,11 @@ void initialize_preflow(t_graph graph, t_node source) {
 		}
 	}
 	source->h = V + 1; /* includes the super sink*/
-	edge = graph->vertexs[source->node_id]->edges;
+	/* resets the supersink */
+	graph->vertexs[V]->h = 0;
+	graph->vertexs[V]->e = 0;
+
+	edge = source->edges;
 	while (edge != NULL) {
 		edge->capacity = 0;
 		graph->vertexs[edge->dest_node_id]->e = 1;
@@ -215,38 +230,29 @@ void initialize_preflow(t_graph graph, t_node source) {
 
 void discharge(t_node vertex) {
 	t_edge edge = NULL;
-	int min_height = vertex->h;
-
+	int min_height = V + 2;
 
 	while (vertex->e > 0) {
 		edge = vertex->current;
 		if (edge == NULL) {
-
-			edge = vertex->edges;
-			while(edge != NULL){
-				if(edge->capacity > 0 && min_height > graph->vertexs[edge->dest_node_id]->h){
-					min_height = graph->vertexs[edge->dest_node_id]->h;
-				}
-				edge = edge->next;
-			}
-
 			min_height++;
 			vertex->h = min_height;
 			vertex->current = vertex->edges;
-		} else if (edge->capacity > 0
-				&& graph->vertexs[edge->dest_node_id]->h + 1 == vertex->h) { /*FIXME:*/
-			push(vertex, edge);
+		} else if (edge->capacity > 0) {
 			if (min_height > graph->vertexs[edge->dest_node_id]->h) {
 				min_height = graph->vertexs[edge->dest_node_id]->h;
 			}
+			if (graph->vertexs[edge->dest_node_id]->h + 1 == vertex->h) {
+				push(vertex, edge);
+			} else {
+				vertex->current = edge->next;
+			}
 		} else {
-			vertex->current = vertex->current->next;
-			/* FIXME: check if there's need to update min_height*/
+			vertex->current = edge->next;
 		}
 	}
 
-	/*
-	 int i = 0;
+	/*int i = 0;
 	 printf("------------- DISCHARGED vertex %d -------------\n",
 	 vertex->node_id);
 	 for (i = 0; i < V + 1; i++) {
@@ -265,12 +271,18 @@ int relabel_to_front(t_graph graph, t_node source) {
 	source->edges = source_tmp_edge->next;
 
 	initialize_preflow(graph, source);
-	list_head_index = 0;
 
+	int destiny = TRUE;
 	for (i_vertex = 0; i_vertex < graph->max_vertex; ++i_vertex) {
 		if (i_vertex != source->node_id) {
 			vertex = graph->vertexs[i_vertex];
 			vertex->current = vertex->edges;
+			/* FIXME: Hack */
+			if (destiny && graph->vertexs[i_vertex]->is_critical) {
+				destiny = FALSE;
+			} else if (graph->vertexs[i_vertex]->is_critical) {
+				graph->vertexs[i_vertex]->edges->capacity = 0; /* cut capacity to supersink */
+			}
 		}
 	}
 	/*debug(); FIXME: rm me*/
@@ -282,8 +294,8 @@ int relabel_to_front(t_graph graph, t_node source) {
 				break;
 			} else {
 				vertex = graph->vertexs[vertex->next_id];
+				continue;
 			}
-			continue;
 		}
 
 		old_height = vertex->h;
@@ -310,7 +322,7 @@ void push(t_node origin, t_edge edge) {
 		edge->capacity = 0;
 		graph->vertexs[edge->dest_node_id]->e++;
 		origin->e--;
-		edge->anti_parallel->capacity++;
+		edge->anti_parallel->capacity = 1;
 	} else {
 		graph->vertexs[edge->dest_node_id]->e += origin->e;
 		origin->e = 0;
@@ -340,16 +352,9 @@ void read_graph() {
 }
 
 int read_problem(t_graph graph) {
-	int n_crit_nodes, crit_node_id, saved;
-	crits_found = 0;
-	int i;
-	for(i=0; i< graph->max_vertex; ++i){
-		graph->vertexs[i]->color = COLOR_WHITE;
-	}
+	int n_crit_nodes, crit_node_id;
 
 	scanf("%d", &n_crit_nodes);
-	saved = n_crit_nodes;
-
 
 	if (n_crit_nodes < 2) {
 		return 0;
@@ -367,19 +372,7 @@ int read_problem(t_graph graph) {
 		n_crit_nodes--;
 	}
 
-
-	dfs_visit(graph, graph->vertexs[crit_node_id]);
-	if(saved != crits_found){
-		return 0;
-	}
-
 	return -1;
-}
-
-void print_output() {
-	/* TOD0:
-	 probably won't be implemented here... will be done in main()
-	 print lista de outputs*/
 }
 
 /*****************************************************************
@@ -400,7 +393,6 @@ t_node create_node(int node_id) {
 	t_node new_node = malloc(sizeof(struct Node));
 	new_node->node_id = node_id;
 	new_node->edges = NULL;
-	new_node->color=COLOR_WHITE;
 	new_node->h = 0;
 	new_node->e = 0;
 	new_node->is_critical = FALSE;
